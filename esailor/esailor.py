@@ -1,4 +1,4 @@
-#!/home/eduardo/miniconda3/envs/esailor/bin/python
+#!/home/joao_valadares/miniconda3/envs/esailor/bin/python
 
 #-->PYTHON UTIL
 import time
@@ -165,7 +165,7 @@ class esailor():
         if self._roslaunch == None:
             print("Gazebo simulation was not started by the user.\nStarting simulation with empy ocean world.")
             self.launchGazeboSimulation(
-                "/home/eduardo/USVSim/yara_ws/src/Yara_OVE/eboat_gazebo/launch/empty_ocean.launch")
+                "/home/joao_valadares/USVSim/yara_ws/src/Yara_OVE/eboat_gazebo/launch/empty_ocean.launch")
             # self.launchGazeboSimulation()
 
         # --> ADJUST PHYSICS PROPERTIES
@@ -193,8 +193,8 @@ class esailor():
         #--> LAUNCH GAZEBO SIMULATION IF IT IS NOT RUNNING YET
         if self._roslaunch == None:
             print("Gazebo simulation was not started by the user.\nStarting simulation with empy ocean world.")
-            self.launchGazeboSimulation("/home/eduardo/USVSim/yara_ws/src/Yara_OVE/eboat_gazebo/launch/empty_ocean.launch")
-            # self.launchGazeboSimulation()
+            # self.launchGazeboSimulation("/home/joao_valadares/USVSim/yara_ws/src/Yara_OVE/eboat_gazebo/launch/empty_ocean.launch")
+            self.launchGazeboSimulation()
 
         #--> ADJUST PHYSICS PROPERTIES
         if not(self._holdPhysiscsProperties):
@@ -473,7 +473,7 @@ class esailor():
 
         #--> INITIALIZE THE SENSOR HUD
         sensors = subprocess.Popen([sys.executable, os.path.join(
-            "/home/eduardo/USVSim/eboat_ws/src/eboat_gz_1/eboat_control/python/projects/ESailor", "sensor_array.py")])
+            "/home/joao_valadares/USVSim/eboat_ws/src/eboat_gz_1/eboat_control/python/projects/ESailor", "sensor_array.py")])
         # camera_raw = subprocess.Popen([sys.executable, "./camera_raw.py"])
         # camera_proc = subprocess.Popen([sys.executable, "./camera_detection.py"])
 
@@ -640,10 +640,13 @@ class esailor():
 
         # -->PATH PLANNING FOR THE TEST MISSION
         baseDist = baseDistance
+        # baseVec = np.array([1.0, 0.0])
         baseVec = np.array([1.0, 0.0])
         path2follow = [baseVec * baseDist]
-        thetaVec = [-45     , -90     , -135    , -180    , 45      , 135]
-        D        = [baseDist, baseDist, baseDist, baseDist, baseDist, baseDist]
+        # thetaVec = [-45     , -90     , -135    , -180    , 45      , 135]
+        # D        = [baseDist, baseDist, baseDist, baseDist, baseDist, baseDist]
+        thetaVec = [-90, -135]
+        D        = [baseDist, baseDist]
         # ========================================================
         # theta_wind = 180
         # theta_model = (theta_wind > 150) * 0.7854 - (theta_wind < -150) * 0.7854
@@ -662,7 +665,7 @@ class esailor():
 
         # --> INITIALIZE THE SENSOR HUD
         # sensors = subprocess.Popen([sys.executable, os.path.join(
-        #     "/home/eduardo/USVSim/eboat_ws/src/eboat_gz_1/eboat_control/python/projects/ESailor", "sensor_array.py")])
+        #     "/home/joao_valadares/USVSim/eboat_ws/src/eboat_gz_1/eboat_control/python/projects/ESailor", "sensor_array.py")])
         # camera_raw = subprocess.Popen([sys.executable, "./camera_raw.py"])
         # camera_proc = subprocess.Popen([sys.executable, "./camera_detection.py"])
 
@@ -713,13 +716,13 @@ class esailor():
 
                 if model != None:
                     action, _ = model.predict(self.rescaleObs(obs)[:5])
-                    actionROS = [((action[0] + 1) * 45.0), (action[1] * 60.0), np.int16(action[2] * 5)]
+                    actionROS = [((action[0] + 1) * 45.0), (action[1] * 60.0)]
                 else:
                     actionROS = self.pidController(obs)
 
                 boomAng_pub.publish(actionROS[0])
                 rudderAng_pub.publish(actionROS[1])
-                propPwr_pub.publish(actionROS[2])
+                # propPwr_pub.publish(actionROS[2])
                 # print(f"Observations: ", obs)
                 # print("----------------------------------------")
                 # print(f"Action      : {actionROS[0]} | {actionROS[1]} | {actionROS[2]}")
@@ -740,8 +743,9 @@ class esailor():
         # sensors.kill()
         # print(states_and_actions)
         df = pd.DataFrame(states_and_actions, columns=["distance","dirang","surge","apwindSpd","apwindAng","boomAng",
-                                                       "rudderAng", "propPwr", "roll", "X", "Y", "boomAct", "rudderAct",
-                                                       "propPwrAct"])
+                                                    "rudderAng", "propPwr", "roll", "X", "Y", "boomAct", "rudderAct"])
+                                                       #"propPwrAct"
+
         print(df)
         if model == None:
             df.to_csv(f"pid_mission_2_{ws}.csv", sep=";", index=False)
@@ -795,7 +799,7 @@ class esailor():
         #--> LAUNCH GAZEBO SIMULATION IF IT IS NOT RUNNING YET
         if self._roslaunch == None:
             print("Gazebo simulation was not started by the user.\nStarting simulation with empy ocean world.")
-            self.launchGazeboSimulation("/home/eduardo/USVSim/yara_ws/src/Yara_OVE/eboat_gazebo/launch/empty_ocean.launch")
+            self.launchGazeboSimulation("/home/joao_valadares/USVSim/yara_ws/src/Yara_OVE/eboat_gazebo/launch/empty_ocean.launch")
             # self.launchGazeboSimulation()
 
         #--> ADJUST PHYSICS PROPERTIES
@@ -896,6 +900,7 @@ class esailor():
         # -->PATH PLANNING FOR THE TEST MISSION
         baseDist = baseDistance
         baseVec = np.array([1.0, 0.0])
+        baseVec = np.array([1.0, 0.0])
         path2follow = [baseVec * baseDist]
         thetaVec = [-45, -90, -135, -180, 45, 135]
         D = [baseDist, baseDist, baseDist, baseDist, baseDist, baseDist]
@@ -916,7 +921,7 @@ class esailor():
         time.sleep(5)
 
         # --> INITIALIZE THE SENSOR HUD
-        # sensors = subprocess.Popen([sys.executable, os.path.join("/home/eduardo/USVSim/eboat_ws/src/eboat_gz_1/eboat_control/python/projects/ESailor", "sensor_array.py")])
+        # sensors = subprocess.Popen([sys.executable, os.path.join("/home/joao_valadares/USVSim/eboat_ws/src/eboat_gz_1/eboat_control/python/projects/ESailor", "sensor_array.py")])
         # camera_raw = subprocess.Popen([sys.executable, "./camera_raw.py"])
         # camera_proc = subprocess.Popen([sys.executable, "./camera_detection.py"])
 
@@ -1020,7 +1025,7 @@ class esailor():
         if self._roslaunch.pid != None:
             ppid = self._roslaunch.pid
             print(f"\n\n===================\nProcess id: {ppid}\n===================\n")
-            os.system(f'ps -au eduardo | grep {self._roslaunch.pid}')
+            os.system(f'ps -au joao_valadares | grep {self._roslaunch.pid}')
             os.killpg(os.getpgid(self._roslaunch.pid), signal.SIGTERM)
 
             print("\n\n\nCLOSE FUNCTION\n\n")
@@ -1033,23 +1038,25 @@ def main(argv):
     print("RL agent :", rlagent)
     
     # refmodel = PPO.load("./models/PPO/esailor_93_A116_C116_29022024_18_28_51/esailor_model_1001472_steps.zip")
-    if rlagent == "PPO":
-        refmodel = PPO.load(f"./policy/esailor_53_{rlagent}_A3232_C3232_03032024/esailor_model_501760_steps.zip")
-    elif rlagent == "SAC":
-        refmodel = SAC.load(f"./policy/esailor_53_{rlagent}_A3232_C3232_03032024/esailor_model_501760_steps.zip")
-    else:
-        refmodel = None
+    # if rlagent == "PPO":
+    #     refmodel = PPO.load(f"./policy/esailor_53_{rlagent}_A3232_C3232_03032024/esailor_model_501760_steps.zip")
+    # elif rlagent == "SAC":
+    #     refmodel = SAC.load(f"./policy/esailor_53_{rlagent}_A3232_C3232_03032024/esailor_model_501760_steps.zip")
+    # else:
+    #     refmodel = None
+    refmodel = PPO.load("./models/PPO/esailor_93_A3232_C3232_04042024_13_38_54/esailor_model_501760_steps.zip")
+    # refmodel = None
     agent = esailor()
-    # agent.training(rlagent=rlagent,
-    #                policy="MlpPolicy",
-    #                envid="Eboat93-v0",
-    #                numofsteps=(245 * 2048), #489 * 2048,
-    #                refmodel=refmodel,
-    #                actor=[32, 32],
-    #                critic=[32, 32],
-    #                sufix="esailor_93",
-    #                logdir="logs")
-    agent.testModel2(refmodel, rlagent = rlagent)
+    agent.training(rlagent=rlagent,
+                 policy="MlpPolicy",
+                 envid="Eboat93-v0",
+                 numofsteps=(245 * 2048), #489 * 2048,
+                 refmodel=refmodel,
+                  actor=[32, 32],
+                  critic=[32, 32],
+                  sufix="esailor_93",
+                  logdir="logs")
+    # agent.testModel2(refmodel, rlagent = rlagent)
     # agent.humanPolicy(envid="Eboat92-v0", numofsteps=120)
     # agent.checkEnv(envid="Eboat93-v0")
     # agent.pidTest()
