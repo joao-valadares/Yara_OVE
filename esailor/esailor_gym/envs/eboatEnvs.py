@@ -1271,7 +1271,7 @@ class Eboat93_v0(EboatBase):
         #-->DEFINE OBSERVATION AND ACTION SPACES
         self.action_space = spaces.Box(low   = -1  ,
                                        high  = 1   ,
-                                       shape = (3,),
+                                       shape = (2,),
                                        dtype = np.float32)
 
         self.observation_space = spaces.Box(low   = -1  ,
@@ -1284,7 +1284,8 @@ class Eboat93_v0(EboatBase):
         # self.wind_speedVec   = np.array([5, 7, 9, 11, 12]) * 0.51444
         self.wind_speedVec = np.array([5, 6, 7, 8, 9, 10, 11, 12]) * 0.51444
         # self.wind_speedVec   = [12 * 0.51444]  #--> 12 knots (~6.17 m/s)
-        self.wind_directions = np.concatenate([[-175], np.arange(-150, -5, 15), np.array([-5, 5]), np.arange(15, 151, 15), [175]])
+       # self.wind_directions = np.concatenate([[-175], np.arange(-150, -5, 15), np.array([-5, 5]), np.arange(15, 151, 15), [175]])
+        self.wind_directions = np.array([135, -135])
 
         print(f"\n\n-------------------------------------------\n{self.wind_directions}\n-------------------------------------------\n")
 
@@ -1323,7 +1324,7 @@ class Eboat93_v0(EboatBase):
         # self.preD          = 0.0                           #--> DISTANCE TRAVELED BY THE BOAT IN THE PREVIOUS STEP
         self.d2r           = np.pi / 180.0
         self.step_count    = 0
-        self.lateral_limit = 0.6 * 100.0                   #--> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
+        self.lateral_limit = 10.0                   #--> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
         self.dS            = 0                             #--> TOTAL TRAVELED DISTANCE
 
     def repositionWayPoint(self, newdistance = None):
@@ -1368,22 +1369,22 @@ class Eboat93_v0(EboatBase):
         epwr = np.min([abs(obs[7]), 5.0])
 
         if obs[0] < 5.1:
-            R = 1.0
+            R = 1
         elif obs[0] > self.DMAX:
             R = -1.0
-        # elif abs(obs[9]) > self.lateral_limit:
-        #     R = -1.0
+        elif abs(obs[10]) > self.lateral_limit:
+            R = -1.0
         # elif abs(obs[1]) > 90:
         #     R = -1.0
         elif dS0 > 0:
-            R = (dS0 / self.DMAX) * (1.0 - 0.9 * (epwr / 5.0))
+            R = (dS0 / self.DMAX) * (1.0 + 0.5 * (abs(obs[2]) > 0.25 * self.wind_speed))
         else:
-            R = (2.0 * (dS0 / self.DMAX)) - (0.01 * epwr)
+            R = (2.0 * (dS0 / self.DMAX))
 
         return R
 
     def step(self, action):
-        act = np.array([((action[0] + 1) * 45.0), (action[1] * 60.0), (action[2] * 5)])
+        act = np.array([((action[0] + 1) * 45.0), (action[1] * 60.0)])
         #--> UNPAUSE SIMULATION
         rospy.wait_for_service("/gazebo/unpause_physics")
         try:
@@ -1394,7 +1395,7 @@ class Eboat93_v0(EboatBase):
         #-->PUBLISH THE ACTIONS IN THE ROSTOPIC (SEND COMMANDS TO THE ACTUATORS)
         self.boomAng_pub.publish(act[0])
         self.rudderAng_pub.publish(act[1])
-        self.enginePower_pub.publish(int(act[2]))
+        # self.enginePower_pub.publish(int(act[2]))
 
         #-->GET OBSERVATIONS
         obs = self.getObservations()
@@ -1416,9 +1417,9 @@ class Eboat93_v0(EboatBase):
         done  = bool((obs[0] < 5.1) |
                      (obs[0] > self.DMAX) |
                      # (abs(obs[1]) > 90) |
-                     # (abs(obs[9]) > self.lateral_limit) |
                      (np.isnan(obs).any()))
-        trunc = bool(self.step_count > 300)
+        trunc = bool((self.step_count > 300) |
+                     (abs(obs[10]) > self.lateral_limit))
 
         # -->UPDATE PREVIOUS STATE VARIABLES
         self.PREVOBS     = obs
