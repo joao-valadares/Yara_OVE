@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot name="catamara" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Attach hydrodynamics plugin -->
+  <!--Gazebo Plugin for simulating EBoat dynamics-->
+  <gazebo>
+    <plugin name="usv_dynamics" filename="libusv_gazebo_dynamics_plugin.so">
+      <bodyName>base_link</bodyName>
+      <!-- Must be same as the ocean model!-->
+      <waterLevel>0</waterLevel>
+      <waterDensity>997.0</waterDensity>
+      <!-- Added mass -->
+      <xDotU>0</xDotU>
+      <yDotV>124</yDotV>
+      <zDotW>148</zDotW>
+      <kDotP>0.0</kDotP>
+      <mDotQ>0.0</mDotQ>
+      <nDotR>0.0</nDotR>
+      <!-- Linear and quadratic drag -->
+      <xU>${0.1 * 51.3}</xU>
+      <xUU>${0.1 * 72.4}</xUU>
+      <yV>${0.3 * 80.0}</yV>
+      <yVV>${0.3 * 1600.0}</yVV>
+      <zW>${0.5 * 500.0}</zW>
+      <zWW>0.0</zWW>
+      <kP>${0.5 * 50.0}</kP>
+      <mQ>${0.5 * 50.0}</mQ>
+      <!--<nR>${0.15 * 400.0}</nR>
+      <nRR>0.0</nRR>-->
+      <nR>${0.3 * 400.0}</nR>
+      <nRR>0.0</nRR>
+      <!-- General dimensions -->
+      <hullRadius>0.4</hullRadius>
+      <boatWidth>0.45</boatWidth>
+      <boatLength>2.4</boatLength>
+      <!-- Length discretization, AKA, "N" -->
+      <length_n>2</length_n>
+      <!-- Wave model -->
+      <wave_model>ocean_waves</wave_model>
+    </plugin>
+  </gazebo>
+
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.113292689429226 -0.0467637476398605 -0.143913252803642"
+        rpy="0 0 0" />
+      <mass
+        value="646.081443011827" />
+      <inertia
+        ixx="329.598288186942"
+        ixy="0.361905914520838"
+        ixz="0.00851977026799805"
+        iyy="518.572522747826"
+        iyz="-0.00700212031174638"
+        izz="208.557324219992" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://eboat_description/models/URDF_Montagem-simplificada_v1/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://eboat_description/models/URDF_Montagem-simplificada_v1/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Link-helice-esq">
+    <inertial>
+      <origin
+        xyz="1.11022302462516E-16 -2.05391259555654E-15 0.079803529866814"
+        rpy="0 0 0" />
+      <mass
+        value="0.00154205508711464" />
+      <inertia
+        ixx="1.16517538786436E-07"
+        ixy="-1.3056218788537E-20"
+        ixz="1.98854219257748E-21"
+        iyy="1.16517538786437E-07"
+        iyz="-6.25265825028834E-21"
+        izz="1.71589888113602E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://eboat_description/models/URDF_Montagem-simplificada_v1/meshes/Link-helice-esq.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://eboat_description/models/URDF_Montagem-simplificada_v1/meshes/Link-helice-esq.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Junta-helice-esq"
+    type="revolute">
+    <origin
+      xyz="1.05 -0.62287 -0.30432"
+      rpy="1.5708 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="Link-helice-esq" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="509950"
+      velocity="628.31" />
+  </joint>
+  <link
+    name="Link-helice-dir">
+    <inertial>
+      <origin
+        xyz="1.66533453693773E-15 -7.21644966006352E-16 0.0798012524693201"
+        rpy="0 0 0" />
+      <mass
+        value="0.00154257760980479" />
+      <inertia
+        ixx="1.1653203774594E-07"
+        ixy="-7.16669282715943E-21"
+        ixz="-1.41861475052844E-21"
+        iyy="1.16532037745946E-07"
+        iyz="-7.38010542519811E-21"
+        izz="1.7158191372401E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://eboat_description/models/URDF_Montagem-simplificada_v1/meshes/Link-helice-dir.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://eboat_description/models/URDF_Montagem-simplificada_v1/meshes/Link-helice-dir.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Junta-helice-dir"
+    type="revolute">
+    <origin
+      xyz="1.05 0.91074 -0.30432"
+      rpy="1.5708 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="Link-helice-dir" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="509950"
+      velocity="628.31" />
+  </joint>
+</robot>
