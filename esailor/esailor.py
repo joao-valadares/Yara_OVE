@@ -160,7 +160,7 @@ class esailor():
         # print("\n\n-------------------------------------\n", self._physics_properties(), "\n-------------------------------------\n")
 
     def checkEnv(self,
-                 envid = "Eboat93-v1"):
+                 envid = "Eboat93-v2"):
         # --> LAUNCH GAZEBO SIMULATION IF IT IS NOT RUNNING YET
         if self._roslaunch == None:
             print("Gazebo simulation was not started by the user.\nStarting simulation with empy ocean world.")
@@ -182,7 +182,7 @@ class esailor():
     def training(self,
                  rlagent    = "PPO",
                  policy     = "MlpPolicy",
-                 envid      = "Eboat93-v0",
+                 envid      = "Eboat93-v3",
                  numofsteps = 500000,
                  refmodel   = None,
                  actor      = [11, 11],
@@ -675,7 +675,7 @@ class esailor():
             path2follow.append(path2follow[-1] + np.dot((baseVec * D[i]), rot))
 
         # --> SET THE WIND
-        ws = 20
+        ws = 8
         # wind_pub.publish(Point(6.17, 0.0, 0.0))
         wind_pub.publish(Point((ws * 0.51444), 0.0, 0.0))
 
@@ -744,7 +744,7 @@ class esailor():
         # print(states_and_actions)
         df = pd.DataFrame(states_and_actions, columns=["distance","dirang","surge","apwindSpd","apwindAng","boomAng",
                                                     "rudderAng", "propPwr", "roll", "X", "Y", "boomAct", "rudderAct"])
-                                                       #"propPwrAct"
+                                                      # "propPwrAct",
 
         print(df)
         if model == None:
@@ -902,8 +902,8 @@ class esailor():
         baseVec = np.array([1.0, 0.0])
         baseVec = np.array([1.0, 0.0])
         path2follow = [baseVec * baseDist]
-        thetaVec = [-45, -90, -135, -180, 45, 135]
-        D = [baseDist, baseDist, baseDist, baseDist, baseDist, baseDist]
+        thetaVec = [-90, -135]
+        D = [baseDist, baseDist, baseDist]
         # ========================================================
         # theta_wind = 180
         # theta_model = (theta_wind > 150) * 0.7854 - (theta_wind < -150) * 0.7854
@@ -1032,7 +1032,7 @@ class esailor():
 
 def main(argv):
     if len(argv) < 1:
-        rlagent = 'PPO'
+        rlagent = "PPO"
     else:
         rlagent = argv[0]
     print("RL agent :", rlagent)
@@ -1044,22 +1044,25 @@ def main(argv):
     #     refmodel = SAC.load(f"./policy/esailor_53_{rlagent}_A3232_C3232_03032024/esailor_model_501760_steps.zip")
     # else:
     #     refmodel = None
-    refmodel = PPO.load("./models/PPO/esailor_93_A3232_C3232_04042024_13_38_54/esailor_model_501760_steps.zip")
-    # refmodel = None
+    refmodel = PPO.load("./models/PPO/esailor_93-v0_A3232_C3232_22042024_11_36_51/esailor_model_501760_steps.zip")
+    #refmodel = None
     agent = esailor()
+    """
     agent.training(rlagent=rlagent,
-                 policy="MlpPolicy",
-                 envid="Eboat93-v0",
-                 numofsteps=(245 * 2048), #489 * 2048,
-                 refmodel=refmodel,
-                  actor=[32, 32],
-                  critic=[32, 32],
-                  sufix="esailor_93",
-                  logdir="logs")
-    # agent.testModel2(refmodel, rlagent = rlagent)
+                policy="MlpPolicy",
+                envid="Eboat93-v3",
+                numofsteps=(245 * 2048), #489 * 2048,
+                refmodel=refmodel,
+                actor=[32, 32],
+                critic=[32, 32],
+                sufix="esailor_93-v3",
+                logdir="logs")
+    """
+    agent.testModel2(refmodel, rlagent = rlagent)
+
     # agent.humanPolicy(envid="Eboat92-v0", numofsteps=120)
     # agent.checkEnv(envid="Eboat93-v0")
-    # agent.pidTest()
+    #agent.pidTest()
     agent.close()
 
 if __name__ == "__main__":

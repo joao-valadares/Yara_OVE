@@ -33,6 +33,7 @@ from tf.transformations import quaternion_from_euler
 from gazebo_msgs.srv import SetModelState, SpawnModel, DeleteModel
 from gazebo_msgs.msg import ModelState
 
+
 class EboatBase(gym.Env):
     def __init__(self):
         # -->DEFINE A UNIQUE MODEL NAME FOR OUR BOAT
@@ -90,6 +91,7 @@ class EboatBase(gym.Env):
         ipose.position.x = 100.0
         ipose.position.y = 0.0
         ipose.position.z = 0.0
+
         self.waypoint_namespace = f"wayPointMarker"
         with open(sdffilepath, "r") as f:
             sdffile = f.read()
@@ -108,7 +110,7 @@ class EboatBase(gym.Env):
         self.rudderAng_pub = rospy.Publisher(f"/{self.model_namespace}/control_interface/rudder", Float32,
                                              queue_size=1)
         self.enginePower_pub = rospy.Publisher(f"/{self.model_namespace}/control_interface/propulsion", Int16,
-                                           queue_size=1)
+                                               queue_size=1)
         self.wind_pub = rospy.Publisher(f"/eboat/atmosferic_control/wind", Point, queue_size=1)
         self.unpause = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
@@ -117,7 +119,7 @@ class EboatBase(gym.Env):
         self.get_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
 
     def rot(self, modulus, theta):
-        rot = np.array([[np.cos(theta), -np.sin(theta)],[np.sin(theta), np.cos(theta)]], dtype=np.float32)
+        rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]], dtype=np.float32)
 
         return np.dot(np.array([1, 0], dtype=np.float32) * modulus, rot)
 
@@ -199,6 +201,7 @@ class EboatBase(gym.Env):
         except rospy.ServiceException:
             print("/gazebo/get_model_state service call failed")
 
+
 class Eboat925_v0(EboatBase):
     def __init__(self):
         # print(f"\n----------------------\n{ros_port}\n----------------------\n")
@@ -231,10 +234,10 @@ class Eboat925_v0(EboatBase):
 
         #-->SET WIND INITIAL CONDITIONS AND DEFINE ITS HOW IT WILL VARIATE
         self.windVec = np.array([0, 0, 0], dtype=np.float32)
-        self.min_windspeed   = 3
-        self.max_windspeed   = 11
+        self.min_windspeed = 3
+        self.max_windspeed = 11
         self.wind_directions = np.array([-135, -90, -45, -5, 5, 45, 90, 135])
-        self.wind_speed      = 0.0
+        self.wind_speed = 0.0
 
         time.sleep(5)
 
@@ -263,23 +266,23 @@ class Eboat925_v0(EboatBase):
             print(("/gazebo/pause_physics service call failed!"))
 
         #-->AUXILIARY VARIABLES
-        self.DTOL          = 25
-        self.D0            = self.PREVOBS[0]
-        self.DMAX          = self.PREVOBS[0] + self.DTOL
-        self.PREdS         = 0.0                           #--> DISTANCE TRAVELED BY THE BOAT TOWARDS THE GOAL (D(t = n) - D(t = n-1))
-        self.d2r           = np.pi / 180.0
-        self.step_count    = 0
-        self.lateral_limit = 5                             #-->DEFINE THE HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT LINE BEFORE A DONE SIGNAL
-        self.PREVACT       = np.array([-1, -1])
-        self.maxcharge     = 10
-        self.battery       = np.full(2, fill_value=self.maxcharge, dtype=int)
+        self.DTOL = 25
+        self.D0 = self.PREVOBS[0]
+        self.DMAX = self.PREVOBS[0] + self.DTOL
+        self.PREdS = 0.0  #--> DISTANCE TRAVELED BY THE BOAT TOWARDS THE GOAL (D(t = n) - D(t = n-1))
+        self.d2r = np.pi / 180.0
+        self.step_count = 0
+        self.lateral_limit = 5  #-->DEFINE THE HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT LINE BEFORE A DONE SIGNAL
+        self.PREVACT = np.array([-1, -1])
+        self.maxcharge = 10
+        self.battery = np.full(2, fill_value=self.maxcharge, dtype=int)
 
     def rewardFunction0(self, obs, actions):
         #-->COMPUTE THE DISTANCE TRAVELED BY THE BOAT TOWARDS THE OBJECTIVE. IF D > 0 THE BOAT WENT NEAR THE OBJECTIVE.
-        dS  = self.PREVOBS[0] - obs[0]
-        ta  = abs(obs[1])
+        dS = self.PREVOBS[0] - obs[0]
+        ta = abs(obs[1])
         pta = abs(self.PREVOBS[1])
-        C0  = dS / self.D0;
+        C0 = dS / self.D0;
 
         if dS > 0:
             if dS > self.PREdS:
@@ -291,7 +294,7 @@ class Eboat925_v0(EboatBase):
 
             if ta <= 45.0:
                 if ta < pta:
-                # if pta - ta > 1:
+                    # if pta - ta > 1:
                     C2 = 0.5 * C0
                 # elif ta > pta:
                 elif ta - pta > 1:
@@ -303,7 +306,7 @@ class Eboat925_v0(EboatBase):
                         C2 = 0.0
             else:
                 if ta < pta:
-                # if pta - ta > 1:
+                    # if pta - ta > 1:
                     C2 = 0.7 * C0
                 # elif ta > pta:
                 elif ta - pta > 1:
@@ -318,7 +321,7 @@ class Eboat925_v0(EboatBase):
             # else:
             #     C3 = 0.0
 
-            R = C0 + C1 + C2 #+ C3
+            R = C0 + C1 + C2  #+ C3
             # print(f"dS(t)   = {dS} = {self.PREVOBS[0]} - {obs[0]}")
             # print(f"dS(t-1) = {self.PREdS}")
             # print(f"ta      = {ta}")
@@ -336,10 +339,10 @@ class Eboat925_v0(EboatBase):
 
     def rewardFunction1(self, obs):
         #-->COMPUTE THE DISTANCE TRAVELED BY THE BOAT TOWARDS THE OBJECTIVE. IF D > 0 THE BOAT WENT NEAR THE OBJECTIVE.
-        dS  = self.PREVOBS[0] - obs[0]
-        ta  = abs(obs[1])
+        dS = self.PREVOBS[0] - obs[0]
+        ta = abs(obs[1])
         pta = abs(self.PREVOBS[1])
-        C0  = dS / self.D0;
+        C0 = dS / self.D0;
 
         if dS > 0:
             if dS > self.PREdS:
@@ -388,13 +391,15 @@ class Eboat925_v0(EboatBase):
 
     def rewardFunctionA(self, obs, action):
         #-->COMPUTE THE DISTANCE TRAVELED BY THE BOAT TOWARDS THE OBJECTIVE. IF D > 0 THE BOAT WENT NEAR THE OBJECTIVE.
-        dS    = self.PREVOBS[0] - obs[0]
-        ta    = abs(obs[1])
-        pta   = abs(self.PREVOBS[1])
-        db    = abs((self.PREVACT[0] - action[0]) * 45.0) #abs(self.PREVOBS[5] - (action[0] + 1.0) * 45.0) #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
-        dr    = abs((self.PREVACT[1] - action[1]) * 60.0) #abs(self.PREVOBS[6] - (action[1] * 60.0))       #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
-        alpha = 180 - obs[5] - abs(obs[4])                      #--> Sail attack angle
-        C0  = dS / self.D0;
+        dS = self.PREVOBS[0] - obs[0]
+        ta = abs(obs[1])
+        pta = abs(self.PREVOBS[1])
+        db = abs((self.PREVACT[0] - action[
+            0]) * 45.0)  #abs(self.PREVOBS[5] - (action[0] + 1.0) * 45.0) #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
+        dr = abs((self.PREVACT[1] - action[
+            1]) * 60.0)  #abs(self.PREVOBS[6] - (action[1] * 60.0))       #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
+        alpha = 180 - obs[5] - abs(obs[4])  #--> Sail attack angle
+        C0 = dS / self.D0;
 
         if dS > 0:
             C1 = ((dS > self.PREdS) * 0.5 - (dS < self.PREdS) * 0.6) * C0
@@ -444,20 +449,22 @@ class Eboat925_v0(EboatBase):
 
         return np.max([R, -1])
 
-    def rewardFunctionB(self, obs, action): #-->rewardFunctionB (INATIVA)
-        dS    = self.PREVOBS[0] - obs[0]
-        ta    = abs(obs[1])
-        pta   = abs(self.PREVOBS[1])
-        db    = abs(self.PREVOBS[5] - (action[0] + 1.0) * 45.0) #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
-        dr    = abs(self.PREVOBS[6] - (action[1] * 60.0))       #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
-        alpha = 180 - obs[5] - abs(obs[4])                      #--> Sail attack angle
+    def rewardFunctionB(self, obs, action):  #-->rewardFunctionB (INATIVA)
+        dS = self.PREVOBS[0] - obs[0]
+        ta = abs(obs[1])
+        pta = abs(self.PREVOBS[1])
+        db = abs(self.PREVOBS[5] - (
+                    action[0] + 1.0) * 45.0)  #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
+        dr = abs(self.PREVOBS[6] - (
+                    action[1] * 60.0))  #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
+        alpha = 180 - obs[5] - abs(obs[4])  #--> Sail attack angle
 
         #--> POSITIVE/NEGATIVE RETURN EARNED BY GO NEAR/AWAY THE WAYPOINT
-        C0    = dS / self.D0;
+        C0 = dS / self.D0;
 
         if dS > 0:
             if ta <= 90.0:
-                C1 = (np.cos(ta * self.d2r)**3) * C0
+                C1 = (np.cos(ta * self.d2r) ** 3) * C0
                 if (obs[2] > 0.4 * self.wind_speed):
                     C2 = 1.5 * C0
                 elif (obs[2] > 0.333333333 * self.wind_speed):
@@ -484,8 +491,8 @@ class Eboat925_v0(EboatBase):
                 C3 = 0.0
             #########################################
             C4 = ((C0 + C1 + C2 + C3) *
-                  ((((db > 0) * np.min([1, db/28.0]) * 0.1) + ((dr > 0) * np.min([1, dr/23.0]) * 0.1)) +
-                   (((db > 28) * (db / 90.0) * 0.3) + ((dr > 0) * np.min([1, dr/90.0]) * 0.3))))
+                  ((((db > 0) * np.min([1, db / 28.0]) * 0.1) + ((dr > 0) * np.min([1, dr / 23.0]) * 0.1)) +
+                   (((db > 28) * (db / 90.0) * 0.3) + ((dr > 0) * np.min([1, dr / 90.0]) * 0.3))))
             #########################################
             R = C0 + C1 + C2 + C3 + C4
         elif dS == 0:
@@ -496,20 +503,22 @@ class Eboat925_v0(EboatBase):
 
         return np.max([R, -1])
 
-    def rewardFunctionC(self, obs, action): #-->rewardFunctionC (INATIVA)
-        dS    = self.PREVOBS[0] - obs[0]
-        ta    = abs(obs[1])
-        pta   = abs(self.PREVOBS[1])
-        db    = abs(self.PREVOBS[5] - (action[0] + 1.0) * 45.0) #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
-        dr    = abs(self.PREVOBS[6] - (action[1] * 60.0))       #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
-        alpha = 180 - obs[5] - abs(obs[4])                      #--> Sail attack angle
+    def rewardFunctionC(self, obs, action):  #-->rewardFunctionC (INATIVA)
+        dS = self.PREVOBS[0] - obs[0]
+        ta = abs(obs[1])
+        pta = abs(self.PREVOBS[1])
+        db = abs(self.PREVOBS[5] - (
+                    action[0] + 1.0) * 45.0)  #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
+        dr = abs(self.PREVOBS[6] - (
+                    action[1] * 60.0))  #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
+        alpha = 180 - obs[5] - abs(obs[4])  #--> Sail attack angle
 
         #--> POSITIVE/NEGATIVE RETURN EARNED BY GO NEAR/AWAY THE WAYPOINT
-        C0    = dS / self.D0;
+        C0 = dS / self.D0;
 
         if dS > 0:
             if ta <= 90.0:
-                C1 = (np.cos(ta * self.d2r)**3) * C0
+                C1 = (np.cos(ta * self.d2r) ** 3) * C0
                 if (obs[2] > 0.4 * self.wind_speed):
                     C2 = 1.0 * C0
                 elif (obs[2] > 0.333333333 * self.wind_speed):
@@ -539,11 +548,11 @@ class Eboat925_v0(EboatBase):
             else:
                 C3 = 0.0
             #########################################
-            C4                   = C0 + C1 + C2 + C3
-            boom_energy_factor   = ((db > 0) * np.min([1.0, db / 28.0]) * 0.1) + ((db > 28) * (db / 90.0) * 0.3)
+            C4 = C0 + C1 + C2 + C3
+            boom_energy_factor = ((db > 0) * np.min([1.0, db / 28.0]) * 0.1) + ((db > 28) * (db / 90.0) * 0.3)
             rudder_energy_factor = ((dr > 0) * np.min([1.0, dr / 23.0]) * 0.1) + ((dr > 23) * np.min([1, dr / 90.0]) * 0.3)
             if C4 > 0:
-                C4 *= (-1.0)*(boom_energy_factor + rudder_energy_factor)
+                C4 *= (-1.0) * (boom_energy_factor + rudder_energy_factor)
             else:
                 C4 *= boom_energy_factor + rudder_energy_factor
             #########################################
@@ -556,20 +565,22 @@ class Eboat925_v0(EboatBase):
 
         return np.max([R, -1])
 
-    def rewardFunction(self, obs, action): #-->rewardFunctionD (ATIVA)
-        dS    = self.PREVOBS[0] - obs[0]
-        ta    = abs(obs[1])
-        pta   = abs(self.PREVOBS[1])
-        db    = abs(self.PREVOBS[5] - (action[0] + 1.0) * 45.0) #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
-        dr    = abs(self.PREVOBS[6] - (action[1] * 60.0))       #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
-        alpha = 180 - obs[5] - abs(obs[4])                      #--> Sail attack angle
+    def rewardFunction(self, obs, action):  #-->rewardFunctionD (ATIVA)
+        dS = self.PREVOBS[0] - obs[0]
+        ta = abs(obs[1])
+        pta = abs(self.PREVOBS[1])
+        db = abs(self.PREVOBS[5] - (
+                    action[0] + 1.0) * 45.0)  #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
+        dr = abs(self.PREVOBS[6] - (
+                    action[1] * 60.0))  #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
+        alpha = 180 - obs[5] - abs(obs[4])  #--> Sail attack angle
 
         #--> POSITIVE/NEGATIVE RETURN EARNED BY GO NEAR/AWAY THE WAYPOINT
         C0 = dS / self.D0;
 
         if dS > 0.5:
             if ta <= 90.0:
-                C1 = (np.cos(ta * self.d2r)**3) * C0
+                C1 = (np.cos(ta * self.d2r) ** 3) * C0
                 if (obs[2] > 0.4 * self.wind_speed):
                     C2 = 1.0 * C0
                 elif (obs[2] > 0.333333333 * self.wind_speed):
@@ -599,14 +610,14 @@ class Eboat925_v0(EboatBase):
             else:
                 C3 = 0.0
             #########################################
-            C4                   = C0 + C1 + C2 + C3
+            C4 = C0 + C1 + C2 + C3
             # self.battery[0]     -= (db > 0.0) * 1.0 + (db > 28.0) * 1.0
             # self.battery[1]     -= (dr > 0.0) * 1.0 + (dr > 23.0) * 1.0
             boom_position_factor = 0.6 * (((action[0] + 1.0) * 45.0) < 5.0)
-            boom_energy_factor   = ((db > 0) * np.min([1.0, db / 28.0]) * 0.1) + ((db > 28) * (db / 90.0) * 0.3)
+            boom_energy_factor = ((db > 0) * np.min([1.0, db / 28.0]) * 0.1) + ((db > 28) * (db / 90.0) * 0.3)
             rudder_energy_factor = ((dr > 0) * np.min([1.0, dr / 23.0]) * 0.1) + ((dr > 23) * np.min([1, dr / 90.0]) * 0.3)
             if C4 > 0:
-                C4 *= (-1.0)*(boom_position_factor + boom_energy_factor + rudder_energy_factor)
+                C4 *= (-1.0) * (boom_position_factor + boom_energy_factor + rudder_energy_factor)
             else:
                 C4 *= boom_position_factor + boom_energy_factor + rudder_energy_factor
             #########################################
@@ -650,15 +661,16 @@ class Eboat925_v0(EboatBase):
         reward = self.rewardFunction(obs, action)
 
         #-->CHECK FOR A TERMINAL STATE
-        posY    = obs[10]
+        posY = obs[10]
         windAng = abs(obs[4])
-        done    = bool((obs[0] <= 5) |
-                       (obs[0] > self.PREVOBS[0]) |
-                       (abs(posY) > self.lateral_limit) |
-                       ((windAng >= 160) & (windAng <= 200) & (obs[2] < 0.5)) |  # -->A done signal is returned if the wind is blowing from the bow and the surge velocity is smaller than 0.5 m/s
-                       # (self.step_count > 59) |
-                       (np.isnan(obs).any())
-                      )
+        done = bool((obs[0] <= 5) |
+                    (obs[0] > self.PREVOBS[0]) |
+                    (abs(posY) > self.lateral_limit) |
+                    ((windAng >= 160) & (windAng <= 200) & (obs[
+                                                                2] < 0.5)) |  # -->A done signal is returned if the wind is blowing from the bow and the surge velocity is smaller than 0.5 m/s
+                    # (self.step_count > 59) |
+                    (np.isnan(obs).any())
+                    )
 
         # -->PROCESS DONE SIGNAL
         if done:
@@ -677,7 +689,7 @@ class Eboat925_v0(EboatBase):
 
         return robs, reward, done, False, {}
 
-    def reset(self, seed = None, options = None):
+    def reset(self, seed=None, options=None):
         # -->RESETS THE STATE OF THE ENVIRONMENT.
         rospy.wait_for_service('/gazebo/reset_simulation')
         try:
@@ -726,13 +738,14 @@ class Eboat925_v0(EboatBase):
         robs = self.rescaleObs(obs)
 
         #-->RESET INITIAL STATE VALUES
-        self.PREVOBS    = obs
-        self.PREdS      = 0.0
-        self.PREVACT    = 0.0, 0.0
+        self.PREVOBS = obs
+        self.PREdS = 0.0
+        self.PREVACT = 0.0, 0.0
         self.step_count = 0
-        self.battery    = self.maxcharge, self.maxcharge
+        self.battery = self.maxcharge, self.maxcharge
 
         return robs, {}
+
 
 class Eboat92_v0(EboatBase):
     def __init__(self):
@@ -740,20 +753,20 @@ class Eboat92_v0(EboatBase):
         super().__init__()
 
         #-->DEFINE OBSERVATION AND ACTION SPACES
-        self.action_space = spaces.Box(low   = -1  ,
-                                       high  = 1   ,
-                                       shape = (2,),
-                                       dtype = np.float32)
+        self.action_space = spaces.Box(low=-1,
+                                       high=1,
+                                       shape=(2,),
+                                       dtype=np.float32)
 
-        self.observation_space = spaces.Box(low   = -1  ,
-                                            high  = 1   ,
-                                            shape = (9,),
-                                            dtype = np.float32)
+        self.observation_space = spaces.Box(low=-1,
+                                            high=1,
+                                            shape=(9,),
+                                            dtype=np.float32)
 
         #-->SET WIND INITIAL CONDITIONS AND DEFINE ITS HOW IT WILL VARIATE
-        self.windVec         = np.array([0, 0, 0], dtype=np.float32)
+        self.windVec = np.array([0, 0, 0], dtype=np.float32)
         # self.windSpeedVec    = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14] * 0.51444
-        self.wind_speed      = 12 * 0.51444  #--> 12 knots (~6.17 m/s)
+        self.wind_speed = 12 * 0.51444  #--> 12 knots (~6.17 m/s)
         # self.wind_directions = np.concatenate([np.arange(-150, -5, 15), np.array([-5, 5]), np.arange(15, 151, 15)])
         self.wind_directions = np.array([-135, 135])
 
@@ -784,16 +797,16 @@ class Eboat92_v0(EboatBase):
             print(("/gazebo/pause_physics service call failed!"))
 
         #-->AUXILIARY VARIABLES
-        self.DTOL          = 25
-        self.D0            = self.PREVOBS[0]
-        self.DMAX          = self.PREVOBS[0] + self.DTOL
-        self.DLim          = self.PREVOBS[0] + self.DTOL
-        self.S             = 0.0                           #--> TOTAL DISTANCE TRAVELED BY THE BOAT
-        self.preD          = 0.0                           #--> DISTANCE TRAVELED BY THE BOAT IN THE PREVIOUS STEP
-        self.d2r           = np.pi / 180.0
-        self.step_count    = 0
-        self.lateral_limit = 0.6 * 100.0                   #--> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
-        self.dS            = 0                             #--> TRAVELED DISTANCE
+        self.DTOL = 25
+        self.D0 = self.PREVOBS[0]
+        self.DMAX = self.PREVOBS[0] + self.DTOL
+        self.DLim = self.PREVOBS[0] + self.DTOL
+        self.S = 0.0  #--> TOTAL DISTANCE TRAVELED BY THE BOAT
+        self.preD = 0.0  #--> DISTANCE TRAVELED BY THE BOAT IN THE PREVIOUS STEP
+        self.d2r = np.pi / 180.0
+        self.step_count = 0
+        self.lateral_limit = 0.6 * 100.0  #--> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
+        self.dS = 0  #--> TRAVELED DISTANCE
 
     def rewardFunction0(self, obs, action):  # -->rewardFunctionE (ATIVA)
         # --> D is te difference between the current distance from the goal and the distance in the previous step.
@@ -810,16 +823,16 @@ class Eboat92_v0(EboatBase):
             # R = D * (1.0 + 0.1 * (SV > self.wind_speed * 0.25) + 0.2 * (SV >= self.wind_speed * 0.33333) + 0.3 * (SV >= self.wind_speed * 0.5))
             R = D + SV
         else:
-            R = 1.5 * (D  - abs(SV)) #--> If the trajectory angle is greater or equal to 90o the boat is moving away from the goal.
+            R = 1.5 * (D - abs(SV))  #--> If the trajectory angle is greater or equal to 90o the boat is moving away from the goal.
 
         #--> Sailing points: an increase in the reward based on our previous knowledge about the lift and drag coeficients
         alpha = 180 - obs[5] - abs(obs[4])  # --> Sail attack angle
-        if obs[4] < 90: #--> Broad reach and running
+        if obs[4] < 90:  #--> Broad reach and running
             if ((alpha > 84) & (alpha < 96)):
                 R += 2.0 * SV
             else:
                 pass
-        else:           #--> Beam reach and close reach
+        else:  #--> Beam reach and close reach
             if ((alpha > 24) & (alpha < 36)):
                 R += 2.0 * SV
             else:
@@ -830,7 +843,7 @@ class Eboat92_v0(EboatBase):
 
         #--> A penalt is earned if the boom angle is seted to a value less than 5o.
         if abs(action[0]) < 5.0:
-            R -= 0.8 * abs(R) #--> the penalti is proprotional to the value of R
+            R -= 0.8 * abs(R)  #--> the penalti is proprotional to the value of R
 
         #--> THE SAILING POINT KNOWN AS RUN IS NOT DESIRED BECAUSE IT CAN CAUSE A HARD FLIPPING OF THE SAIL AND MAYBE DAMAGE THE EQUIPMENT.
         if abs(obs[4]) < 20:
@@ -838,13 +851,14 @@ class Eboat92_v0(EboatBase):
 
         return R
 
-    def rewardFunction1(self, obs, action): #-->rewardFunctionD (INATIVA)
-        D     = self.PREVOBS[0] - obs[0]
-        TA    = abs(obs[1])
-        PTA   = abs(self.PREVOBS[1])
-        dB    = abs(self.PREVOBS[5] - action[0])     #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
-        dR    = abs(self.PREVOBS[6] - action[1])     #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
-        alpha = 180 - obs[5] - abs(obs[4])           #--> Sail attack angle
+    def rewardFunction1(self, obs, action):  #-->rewardFunctionD (INATIVA)
+        D = self.PREVOBS[0] - obs[0]
+        TA = abs(obs[1])
+        PTA = abs(self.PREVOBS[1])
+        dB = abs(self.PREVOBS[5] - action[0])  #--> DIFFERENCE BETWEEN THE POSITION OF THE BOOM AND THE NEW POSITION OF THE BOOM REQUIRED BY THE AGENT
+        dR = abs(
+            self.PREVOBS[6] - action[1])  #--> DIFFERENCE BETWEEN THE POSITION OF THE RUDDER AND THE NEW POSITION OF THE RUDDER REQUIRED BY THE AGENT
+        alpha = 180 - obs[5] - abs(obs[4])  #--> Sail attack angle
 
         rref = (0.2 * self.wind_speed) / self.D0
 
@@ -901,7 +915,7 @@ class Eboat92_v0(EboatBase):
         #--> THIS BLOCK PENALIZES THE AGENT BY USING THE ACTUATORS. THE IDEA IS THE AGENT MODIFIES THE ACTUATORS AS LESS AS POSSIBLE
         benergy = (dB > 1.0) * 1 + (dB > 28.0) * 3
         renergy = (dR > 0.1) * 1 + (dR > 23.0) * 3
-        C7      = -0.1 * abs(RBase + C5 + C6) * (benergy + renergy)
+        C7 = -0.1 * abs(RBase + C5 + C6) * (benergy + renergy)
 
         # --> COMPUTE THE RETURN
         R = RBase + C5 + C6 + C7
@@ -910,8 +924,8 @@ class Eboat92_v0(EboatBase):
         return np.max([R, -1])
 
     def rewardFunction(self, obs, action):
-        D        = (obs[0] - self.PREVOBS[0]) / self.D0 #--> This is the approximation rate (velocity) and must be maximized
-        self.dS += np.sqrt(obs[9]**2 + obs[10]**2)      #-->
+        D = (obs[0] - self.PREVOBS[0]) / self.D0  #--> This is the approximation rate (velocity) and must be maximized
+        self.dS += np.sqrt(obs[9] ** 2 + obs[10] ** 2)  #-->
 
     def step(self, action):
         act = np.array([((action[0] + 1) * 45.0), (action[1] * 60.0)])
@@ -944,12 +958,13 @@ class Eboat92_v0(EboatBase):
 
         #-->CHECK FOR A TERMINAL STATE
         windAng = abs(obs[4])
-        done    = bool((obs[0] <= 5))
-        trunc = bool(((windAng >= 160) & (windAng <= 200) & (obs[2] < 0.1)) |  # -->A truncate signal is returned if the wind is blowing from the bow and the surge velocity is smaller than 0.5 m/s)
+        done = bool((obs[0] <= 5))
+        trunc = bool(((windAng >= 160) & (windAng <= 200) & (obs[
+                                                                 2] < 0.1)) |  # -->A truncate signal is returned if the wind is blowing from the bow and the surge velocity is smaller than 0.5 m/s)
                      (obs[0] > self.DLim) |
                      (self.step_count > 600) |
                      (np.isnan(obs).any())
-                    )
+                     )
 
         # -->PROCESS DONE SIGNAL
         if done:
@@ -969,7 +984,7 @@ class Eboat92_v0(EboatBase):
 
         return robs, reward, done, trunc, {}
 
-    def reset(self, seed = None, options = None):
+    def reset(self, seed=None, options=None):
         # -->RESETS THE STATE OF THE ENVIRONMENT.
         rospy.wait_for_service('/gazebo/reset_simulation')
         try:
@@ -1019,11 +1034,12 @@ class Eboat92_v0(EboatBase):
         robs = self.rescaleObs(obs)
 
         #-->RESET INITIAL STATE VALUES
-        self.PREVOBS    = obs
+        self.PREVOBS = obs
         self.step_count = 0
-        self.DLim       = self.D0 + self.DTOL
+        self.DLim = self.D0 + self.DTOL
 
         return robs, {}
+
 
 class Eboat62_v0(EboatBase):
     def __init__(self):
@@ -1031,19 +1047,19 @@ class Eboat62_v0(EboatBase):
         super().__init__()
 
         #-->DEFINE OBSERVATION AND ACTION SPACES
-        self.action_space = spaces.Box(low   = -1  ,
-                                       high  = 1   ,
-                                       shape = (2,),
-                                       dtype = np.float32)
+        self.action_space = spaces.Box(low=-1,
+                                       high=1,
+                                       shape=(2,),
+                                       dtype=np.float32)
 
-        self.observation_space = spaces.Box(low   = -1  ,
-                                            high  = 1   ,
-                                            shape = (6,),
-                                            dtype = np.float32)
+        self.observation_space = spaces.Box(low=-1,
+                                            high=1,
+                                            shape=(6,),
+                                            dtype=np.float32)
 
         #-->SET WIND INITIAL CONDITIONS AND DEFINE ITS HOW IT WILL VARIATE
-        self.windVec         = np.array([0, 0, 0], dtype=np.float32)
-        self.wind_speed      = 12 * 0.51444  #--> 12 knots (~6.17 m/s)
+        self.windVec = np.array([0, 0, 0], dtype=np.float32)
+        self.wind_speed = 12 * 0.51444  #--> 12 knots (~6.17 m/s)
         # self.wind_directions = np.concatenate([np.arange(-150, -5, 15), np.array([-5, 5]), np.arange(15, 151, 15)])
         self.wind_directions = np.array([-150, -135, 135, 150])
         # self.wind_directions = np.array([-179, 179])
@@ -1075,22 +1091,22 @@ class Eboat62_v0(EboatBase):
             print(("/gazebo/pause_physics service call failed!"))
 
         #-->AUXILIARY VARIABLES
-        self.DTOL          = 25
-        self.D0            = self.PREVOBS[0]
-        self.DMAX          = self.PREVOBS[0] + self.DTOL
-        self.S             = 0.0                           #--> TOTAL DISTANCE TRAVELED BY THE BOAT
-        self.PREdS         = 0.0                           #--> DISTANCE TRAVELED BY THE BOAT IN THE PREVIOUS STEP
-        self.d2r           = np.pi / 180.0
-        self.step_count    = 0
-        self.lateral_limit = 0.5 * 100.0                   #--> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
-        self.maxcharge     = 20
-        self.battery       = np.full(2, fill_value=self.maxcharge, dtype=int)
-        self.dx_sum        = 0.0
-        self.avgdx         = 0.0
-        self.X0            = 100.0
+        self.DTOL = 25
+        self.D0 = self.PREVOBS[0]
+        self.DMAX = self.PREVOBS[0] + self.DTOL
+        self.S = 0.0  #--> TOTAL DISTANCE TRAVELED BY THE BOAT
+        self.PREdS = 0.0  #--> DISTANCE TRAVELED BY THE BOAT IN THE PREVIOUS STEP
+        self.d2r = np.pi / 180.0
+        self.step_count = 0
+        self.lateral_limit = 0.5 * 100.0  #--> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
+        self.maxcharge = 20
+        self.battery = np.full(2, fill_value=self.maxcharge, dtype=int)
+        self.dx_sum = 0.0
+        self.avgdx = 0.0
+        self.X0 = 100.0
 
     def rewardFunctionA(self, obs, action):
-        dx    = obs[9] - self.PREVOBS[9]
+        dx = obs[9] - self.PREVOBS[9]
 
         if dx > self.avgdx:
             R = 2.0 * dx / self.X0
@@ -1111,7 +1127,7 @@ class Eboat62_v0(EboatBase):
 
         #--> ENERGY CONSUMPTION
         dBoom = abs(self.PREVOBS[5] - action[0])
-        dRud  = abs(self.PREVOBS[6] - action[1])
+        dRud = abs(self.PREVOBS[6] - action[1])
         benergy = (dBoom > 1.0) * 1 + (dBoom > 28.0) * 1
         renergy = (dRud > 0.0) * 1 + (dRud > 23.0) * 1
         # self.battery[0] -= benergy
@@ -1137,14 +1153,14 @@ class Eboat62_v0(EboatBase):
             # R = D * (1.0 + 0.1 * (SV > self.wind_speed * 0.25) + 0.2 * (SV >= self.wind_speed * 0.33333) + 0.3 * (SV >= self.wind_speed * 0.5))
             R = D + SV
         else:
-            R = 1.5 * (D  - abs(SV)) #--> If the trajectory angle is greater or equal to 90o the boat is moving away from the goal.
+            R = 1.5 * (D - abs(SV))  #--> If the trajectory angle is greater or equal to 90o the boat is moving away from the goal.
 
         #--> Normalize the return
         R *= 1.0 / self.D0
 
         #--> A penalt is earned if the boom angle is seted to a value less than 5o.
         if abs(action[0]) < 5.0:
-            R -= 0.8 * abs(R) #--> the penalti is proprotional to the value of R
+            R -= 0.8 * abs(R)  #--> the penalti is proprotional to the value of R
 
         #--> THE SAILING POINT KNOWN AS RUN IS NOT DESIRED BECAUSE IT CAN CAUSE A HARD FLIPPING OF THE SAIL AND MAYBE DAMAGE THE EQUIPMENT.
         if abs(obs[4]) < 20:
@@ -1183,12 +1199,13 @@ class Eboat62_v0(EboatBase):
 
         #-->CHECK FOR A TERMINAL STATE
         windAng = abs(obs[4])
-        done    = bool((obs[0] <= 5) |
-                       (obs[0] > self.PREVOBS[0])
-                      )
-        trunc = bool(((windAng >= 160) & (windAng <= 200) & (obs[2] < 0.5)) |  # -->A done signal is returned if the wind is blowing from the bow and the surge velocity is smaller than 0.5 m/s)
-                     (np.isnan(obs).any())
+        done = bool((obs[0] <= 5) |
+                    (obs[0] > self.PREVOBS[0])
                     )
+        trunc = bool(((windAng >= 160) & (windAng <= 200) & (obs[
+                                                                 2] < 0.5)) |  # -->A done signal is returned if the wind is blowing from the bow and the surge velocity is smaller than 0.5 m/s)
+                     (np.isnan(obs).any())
+                     )
 
         # -->PROCESS DONE SIGNAL
         if done:
@@ -1201,11 +1218,11 @@ class Eboat62_v0(EboatBase):
             self.PREVOBS = obs
 
         self.step_count += 1
-        self.avgdx       = self.dx_sum / self.step_count
+        self.avgdx = self.dx_sum / self.step_count
 
-        return robs[[0, 1, 2, 4, 5 ,6]], reward, done, False, {}
+        return robs[[0, 1, 2, 4, 5, 6]], reward, done, False, {}
 
-    def reset(self, seed = None, options = None):
+    def reset(self, seed=None, options=None):
         # -->RESETS THE STATE OF THE ENVIRONMENT.
         rospy.wait_for_service('/gazebo/reset_simulation')
         try:
@@ -1255,13 +1272,14 @@ class Eboat62_v0(EboatBase):
         robs = self.rescaleObs(obs)
 
         #-->RESET INITIAL STATE VALUES
-        self.PREVOBS    = obs
+        self.PREVOBS = obs
         # self.step_count = 0
         # self.dx_sum     = 0
         self.battery[0] = self.maxcharge
         self.battery[1] = self.maxcharge
 
-        return robs[[0, 1, 2, 4, 5 ,6]], {}
+        return robs[[0, 1, 2, 4, 5, 6]], {}
+
 
 class Eboat93_v0(EboatBase):
     def __init__(self):
@@ -1269,23 +1287,23 @@ class Eboat93_v0(EboatBase):
         super().__init__()
 
         #-->DEFINE OBSERVATION AND ACTION SPACES
-        self.action_space = spaces.Box(low   = -1  ,
-                                       high  = 1   ,
-                                       shape = (2,),
-                                       dtype = np.float32)
+        self.action_space = spaces.Box(low=-1,
+                                       high=1,
+                                       shape=(2,),
+                                       dtype=np.float32)
 
-        self.observation_space = spaces.Box(low   = -1  ,
-                                            high  = 1   ,
-                                            shape = (5,),
-                                            dtype = np.float32)
+        self.observation_space = spaces.Box(low=-1,
+                                            high=1,
+                                            shape=(5,),
+                                            dtype=np.float32)
 
         #-->SET WIND INITIAL CONDITIONS AND DEFINE ITS HOW IT WILL VARIATE
-        self.windVec         = np.array([0, 0, 0], dtype=np.float32)
+        self.windVec = np.array([0, 0, 0], dtype=np.float32)
         # self.wind_speedVec   = np.array([5, 7, 9, 11, 12]) * 0.51444
-        self.wind_speedVec = np.array([5, 6, 7, 8, 9, 10, 11, 12]) * 0.51444
+        self.wind_speedVec = np.array([6, 8, 10, 12]) * 0.51444
         # self.wind_speedVec   = [12 * 0.51444]  #--> 12 knots (~6.17 m/s)
-       # self.wind_directions = np.concatenate([[-175], np.arange(-150, -5, 15), np.array([-5, 5]), np.arange(15, 151, 15), [175]])
-        self.wind_directions = np.array([135, -135])
+        # self.wind_directions = np.concatenate([[-175], np.arange(-150, -5, 15), np.array([-5, 5]), np.arange(15, 151, 15), [175]])
+        self.wind_directions = np.array([5, -5, 45, -45, 90, -90, 135, -135])
 
         print(f"\n\n-------------------------------------------\n{self.wind_directions}\n-------------------------------------------\n")
 
@@ -1316,18 +1334,18 @@ class Eboat93_v0(EboatBase):
             print(("/gazebo/pause_physics service call failed!"))
 
         #-->AUXILIARY VARIABLES
-        self.DTOL          = 1.2
-        self.D0            = 100.0
-        self.DMAX          = self.DTOL * 100.0
-        self.DLim          = self.DTOL * 100.0
+        self.DTOL = 1.2
+        self.D0 = 100.0
+        self.DMAX = self.DTOL * 100.0
+        self.DLim = self.DTOL * 100.0
         # self.S             = 0.0                           #--> TOTAL DISTANCE TRAVELED BY THE BOAT
         # self.preD          = 0.0                           #--> DISTANCE TRAVELED BY THE BOAT IN THE PREVIOUS STEP
-        self.d2r           = np.pi / 180.0
-        self.step_count    = 0
-        self.lateral_limit = 10.0                   #--> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
-        self.dS            = 0                             #--> TOTAL TRAVELED DISTANCE
+        self.d2r = np.pi / 180.0
+        self.step_count = 0
+        self.lateral_limit = 5.0  #--> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
+        self.dS = 0  #--> TOTAL TRAVELED DISTANCE
 
-    def repositionWayPoint(self, newdistance = None):
+    def repositionWayPoint(self, newdistance=None):
         if newdistance != None:
             # -->SERACH FOR THE SDF FILE DESCRIBING THE WAYPOINT
             HOME = os.path.expanduser('~')
@@ -1360,24 +1378,20 @@ class Eboat93_v0(EboatBase):
                     result = "/gazebo/SpawnModel service call failed"
                 print(f"\n\n===========================\n{result}\n===========================\n")
 
-            self.D0   = newdistance
+            self.D0 = newdistance
             self.DMAX = self.DTOL * newdistance
             self.DLim = self.DTOL * newdistance
 
     def rewardFunction(self, obs):
-        dS0  = self.PREVOBS[0] - obs[0]
+        dS0 = self.PREVOBS[0] - obs[0]
         epwr = np.min([abs(obs[7]), 5.0])
 
         if obs[0] < 5.1:
             R = 1
-        elif obs[0] > self.DMAX:
+        elif (obs[0] > self.DMAX) or (abs(obs[10]) > self.lateral_limit):
             R = -1.0
-        elif abs(obs[10]) > self.lateral_limit:
-            R = -1.0
-        # elif abs(obs[1]) > 90:
-        #     R = -1.0
         elif dS0 > 0:
-            R = (dS0 / self.DMAX) * (1.0 + 0.5 * (abs(obs[2]) > 0.25 * self.wind_speed))
+            R = ((dS0 / self.DMAX) * (1.0 + (0.3 * (obs[5] > 5) + (0.2 * (abs(obs[2]) > 0.3 * self.wind_speed)))))
         else:
             R = (2.0 * (dS0 / self.DMAX))
 
@@ -1414,20 +1428,20 @@ class Eboat93_v0(EboatBase):
         reward = self.rewardFunction(obs)
 
         #-->CHECK FOR A TERMINAL STATE
-        done  = bool((obs[0] < 5.1) |
-                     (obs[0] > self.DMAX) |
-                     # (abs(obs[1]) > 90) |
-                     (np.isnan(obs).any()))
-        trunc = bool((self.step_count > 300) |
-                     (abs(obs[10]) > self.lateral_limit))
+        done = bool((obs[0] < 5.1) |
+                    (obs[0] > self.DMAX) |
+                    # (abs(obs[1]) > 90) |
+                    (np.isnan(obs).any()) |
+                    (abs(obs[10]) > self.lateral_limit))
+        trunc = bool((self.step_count > 300))
 
         # -->UPDATE PREVIOUS STATE VARIABLES
-        self.PREVOBS     = obs
+        self.PREVOBS = obs
         self.step_count += 1
 
         return robs, reward, done, trunc, {}
 
-    def reset(self, seed = None, options = None):
+    def reset(self, seed=None, options=None):
         # -->RESETS THE STATE OF THE ENVIRONMENT.
         rospy.wait_for_service('/gazebo/reset_simulation')
         try:
@@ -1450,7 +1464,7 @@ class Eboat93_v0(EboatBase):
             self.wind_speed = np.random.choice(self.wind_speedVec)
         else:
             self.wind_speed = self.wind_speedVec[0]
-            
+
         self.windVec[:2] = self.rot(self.wind_speed, (theta_wind * self.d2r))
         self.wind_pub.publish(Point(self.windVec[0], self.windVec[1], self.windVec[2]))
 
@@ -1475,11 +1489,470 @@ class Eboat93_v0(EboatBase):
         robs = self.rescaleObs(obs)[:5]
 
         #-->RESET INITIAL STATE VALUES
-        self.PREVOBS    = obs
+        self.PREVOBS = obs
         self.step_count = 0
         # self.DLim       = self.DTOL * obs[0]
 
         return robs, {}
+
+
+class Eboat93_v3(EboatBase):
+    def __init__(self):
+
+        super().__init__()
+
+        # -->DEFINE OBSERVATION AND ACTION SPACES
+        self.action_space = spaces.Box(low=-1,
+                                       high=1,
+                                       shape=(2,),
+                                       dtype=np.float32)
+
+        self.observation_space = spaces.Box(low=-1,
+                                            high=1,
+                                            shape=(5,),
+                                            dtype=np.float32)
+
+        # -->SET WIND INITIAL CONDITIONS AND DEFINE ITS HOW IT WILL VARIATE
+        self.windVec = np.array([0, 0, 0], dtype=np.float32)
+        # self.wind_speedVec   = np.array([5, 7, 9, 11, 12]) * 0.51444
+        self.wind_speedVec = np.array([6, 8, 10, 12]) * 0.51444
+        # self.wind_speedVec   = [12 * 0.51444]  #--> 12 knots (~6.17 m/s)
+        # self.wind_directions = np.concatenate([[-175], np.arange(-150, -5, 15), np.array([-5, 5]), np.arange(15, 151, 15), [175]])
+        self.wind_directions = np.array([5, -5, 45, -45])
+
+        print(f"\n\n-------------------------------------------\n{self.wind_directions}\n-------------------------------------------\n")
+
+        time.sleep(5)
+
+        # --> UNPAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/unpause_physics")
+        try:
+            self.unpause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/unpause_physics service call failed!"))
+
+        # -->GET OBSERVATIONS AT TIME 0 (INITIAL STATE)
+        print("\n\n===========================\nGetting observations on the initial state (t=0)\n===========================\n")
+        self.PREVOBS = None
+        while (self.PREVOBS is None):
+            try:
+                self.PREVOBS = rospy.wait_for_message(f"/{self.model_namespace}/mission_control/observations", Float32MultiArray,
+                                                      timeout=20).data
+            except:
+                pass
+
+        # -->PAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/pause_physics")
+        try:
+            self.pause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/pause_physics service call failed!"))
+
+        # -->AUXILIARY VARIABLES
+        self.DTOL = 1.2
+        self.D0 = 100.0
+        self.DMAX = self.DTOL * 100.0
+        self.DLim = self.DTOL * 100.0
+        # self.S             = 0.0                           #--> TOTAL DISTANCE TRAVELED BY THE BOAT
+        # self.preD          = 0.0                           #--> DISTANCE TRAVELED BY THE BOAT IN THE PREVIOUS STEP
+        self.d2r = np.pi / 180.0
+        self.step_count = 0
+        self.lateral_limit = 10.0  # --> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
+        self.dS = 0  # --> TOTAL TRAVELED DISTANCE
+
+    def repositionWayPoint(self, newdistance=None):
+        if newdistance != None:
+            # -->SERACH FOR THE SDF FILE DESCRIBING THE WAYPOINT
+            HOME = os.path.expanduser('~')
+            files = glob.glob(os.path.join(HOME, f"**/*Yara_OVE/**/*wayPointMarker/model.sdf"), recursive=True)
+            if len(files) > 0:
+                sdffilepath = files[0]
+                del (files)
+            else:
+                raise IOError(f"File wayPointMarker/model.sdf does not exist")
+
+            # -->SPAWN THE WAYPOINT MARKER IN THE GAZEBO SIMULATION
+            # self.spawn_sdf = rospy.ServiceProxy("/gazebo/spawn_sdf_model", SpawnModel)
+            ipose = Pose()
+            ipose.position.x = newdistance
+            ipose.position.y = 0.0
+            ipose.position.z = 0.0
+            # self.waypoint_namespace = f"wayPointMarker"
+            delmodel = rospy.ServiceProxy("/gazebo/delete_model", DeleteModel)
+            rospy.wait_for_service("/gazebo/delete_model")
+            result = delmodel(self.waypoint_namespace)
+            with open(sdffilepath, "r") as f:
+                sdffile = f.read()
+                try:
+                    result = self.spawn_sdf(model_name=self.waypoint_namespace,
+                                            model_xml=sdffile,
+                                            robot_namespace=self.waypoint_namespace,
+                                            initial_pose=ipose,
+                                            reference_frame="world")
+                except rospy.ServiceException:
+                    result = "/gazebo/SpawnModel service call failed"
+                print(f"\n\n===========================\n{result}\n===========================\n")
+
+            self.D0 = newdistance
+            self.DMAX = self.DTOL * newdistance
+            self.DLim = self.DTOL * newdistance
+
+    def rewardFunction(self, obs):
+        dS0 = self.PREVOBS[0] - obs[0]
+        epwr = np.min([abs(obs[7]), 5.0])
+
+        if obs[0] < 5.1:
+            R = 1
+        elif obs[0] > self.DMAX:
+            R = -1.0
+        elif dS0 > 0:
+            R = ((dS0 / self.DMAX) * (1.0 + 0.3 * (abs(obs[2]) > 0.3 * self.wind_speed))) * (1.0 + 0.5 * (obs[5] > 5))
+        else:
+            R = (2.0 * (dS0 / self.DMAX))
+
+        return R
+
+    def step(self, action):
+        act = np.array([((action[0] + 1) * 45.0), (action[1] * 60.0)])
+        # --> UNPAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/unpause_physics")
+        try:
+            self.unpause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/unpause_physics service call failed!"))
+
+        # -->PUBLISH THE ACTIONS IN THE ROSTOPIC (SEND COMMANDS TO THE ACTUATORS)
+        self.boomAng_pub.publish(act[0])
+        self.rudderAng_pub.publish(act[1])
+        # self.enginePower_pub.publish(int(act[2]))
+
+        # -->GET OBSERVATIONS
+        obs = self.getObservations()
+
+        # -->PAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/pause_physics")
+        try:
+            self.pause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/pause_physics service call failed!"))
+
+        # -->SET WIND DIRECTION
+        """
+        if (self.step_count % 3 == 0):
+            if len(self.wind_directions) > 1:
+                theta_wind = np.random.choice(self.wind_directions)
+            else:
+                theta_wind = self.wind_directions[0]
+
+            if len(self.wind_speedVec) > 1:
+                self.wind_speed = np.random.choice(self.wind_speedVec)
+            else:
+                self.wind_speed = self.wind_speedVec[0]
+
+            self.windVec[:2] = self.rot(self.wind_speed, (theta_wind * self.d2r))
+            self.wind_pub.publish(Point(self.windVec[0], self.windVec[1], self.windVec[2]))
+        """
+
+
+
+        # -->RESCALE EACH OBSERVATION TO THE INTERVAL [-1, 1]
+        robs = self.rescaleObs(obs)[:5]
+
+        # -->CALCULATES THE REWARD
+        reward = self.rewardFunction(obs)
+
+        # -->CHECK FOR A TERMINAL STATE
+        done = bool((obs[0] < 5.1) |
+                    (obs[0] > self.DMAX) |
+                    # (abs(obs[1]) > 90) |
+                    (np.isnan(obs).any()))
+        trunc = bool((self.step_count > 300) |
+                    (abs(obs[10]) > self.lateral_limit))
+
+        # -->UPDATE PREVIOUS STATE VARIABLES
+        self.PREVOBS = obs
+        self.step_count += 1
+
+        return robs, reward, done, trunc, {}
+
+    def reset(self, seed=None, options=None):
+        # -->RESETS THE STATE OF THE ENVIRONMENT.
+        rospy.wait_for_service('/gazebo/reset_simulation')
+        try:
+            self.reset_proxy()
+        except (rospy.ServiceException) as e:
+            print(("/gazebo/reset_simulation service call failed!"))
+
+        # -->SET THE ACTUATORS BACK TO THE DEFAULT SETTING
+        self.boomAng_pub.publish(0.0)
+        self.rudderAng_pub.publish(0.0)
+        self.enginePower_pub.publish(0)
+
+        # -->SET A RANDOM INITIAL STATE FOR THE WIND
+        if len(self.wind_directions) > 1:
+            theta_wind = np.random.choice(self.wind_directions)
+        else:
+            theta_wind = self.wind_directions[0]
+
+        if len(self.wind_speedVec) > 1:
+            self.wind_speed = np.random.choice(self.wind_speedVec)
+        else:
+            self.wind_speed = self.wind_speedVec[0]
+
+        self.windVec[:2] = self.rot(self.wind_speed, (theta_wind * self.d2r))
+        self.wind_pub.publish(Point(self.windVec[0], self.windVec[1], self.windVec[2]))
+
+        # -->UNPAUSE SIMULATION TO MAKE OBSERVATION
+        rospy.wait_for_service('/gazebo/unpause_physics')
+        try:
+            self.unpause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/unpause_physics service call failed!"))
+
+        # -->GET OBSERVATIONS
+        obs = self.getObservations()
+
+        # -->PAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/pause_physics")
+        try:
+            self.pause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/pause_physics service call failed!"))
+
+        # -->RESCALE EACH OBSERVATION TO THE INTERVAL [-1, 1]
+        robs = self.rescaleObs(obs)[:5]
+
+        # -->RESET INITIAL STATE VALUES
+        self.PREVOBS = obs
+        self.step_count = 0
+        # self.DLim       = self.DTOL * obs[0]
+
+        return robs, {}
+
+
+class Eboat93_v2(EboatBase):
+    def __init__(self):
+
+        super().__init__()
+
+        # -->DEFINE OBSERVATION AND ACTION SPACES
+        self.action_space = spaces.Box(low=-1,
+                                       high=1,
+                                       shape=(2,),
+                                       dtype=np.float32)
+
+        self.observation_space = spaces.Box(low=-1,
+                                            high=1,
+                                            shape=(5,),
+                                            dtype=np.float32)
+
+        # -->SET WIND INITIAL CONDITIONS AND DEFINE ITS HOW IT WILL VARIATE
+        self.windVec = np.array([0, 0, 0], dtype=np.float32)
+        # self.wind_speedVec   = np.array([5, 7, 9, 11, 12]) * 0.51444
+        self.wind_speedVec = np.array([12]) * 0.51444
+        # self.wind_speedVec   = [12 * 0.51444]  #--> 12 knots (~6.17 m/s)
+        # self.wind_directions = np.concatenate([[-175], np.arange(-150, -5, 15), np.array([-5, 5]), np.arange(15, 151, 15), [175]])
+        self.wind_directions = np.array([5, 45, 90, 135])
+
+        print(f"\n\n-------------------------------------------\n{self.wind_directions}\n-------------------------------------------\n")
+
+        time.sleep(5)
+
+        # --> UNPAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/unpause_physics")
+        try:
+            self.unpause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/unpause_physics service call failed!"))
+
+        # -->GET OBSERVATIONS AT TIME 0 (INITIAL STATE)
+        print("\n\n===========================\nGetting observations on the initial state (t=0)\n===========================\n")
+        self.PREVOBS = None
+        while (self.PREVOBS is None):
+            try:
+                self.PREVOBS = rospy.wait_for_message(f"/{self.model_namespace}/mission_control/observations", Float32MultiArray,
+                                                      timeout=20).data
+            except:
+                pass
+
+        # -->PAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/pause_physics")
+        try:
+            self.pause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/pause_physics service call failed!"))
+
+        # -->AUXILIARY VARIABLES
+        self.DTOL = 1.2
+        self.D0 = 100.0
+        self.DMAX = self.DTOL * 100.0
+        self.DLim = self.DTOL * 100.0
+        # self.S             = 0.0                           #--> TOTAL DISTANCE TRAVELED BY THE BOAT
+        # self.preD          = 0.0                           #--> DISTANCE TRAVELED BY THE BOAT IN THE PREVIOUS STEP
+        self.d2r = np.pi / 180.0
+        self.step_count = 0
+        self.lateral_limit = 40.0  # --> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
+        self.dS = 0  # --> TOTAL TRAVELED DISTANCE
+
+    def repositionWayPoint(self, newdistance=None):
+        if newdistance != None:
+            # -->SERACH FOR THE SDF FILE DESCRIBING THE WAYPOINT
+            HOME = os.path.expanduser('~')
+            files = glob.glob(os.path.join(HOME, f"**/*Yara_OVE/**/*wayPointMarker/model.sdf"), recursive=True)
+            if len(files) > 0:
+                sdffilepath = files[0]
+                del (files)
+            else:
+                raise IOError(f"File wayPointMarker/model.sdf does not exist")
+
+            # -->SPAWN THE WAYPOINT MARKER IN THE GAZEBO SIMULATION
+            # self.spawn_sdf = rospy.ServiceProxy("/gazebo/spawn_sdf_model", SpawnModel)
+            ipose = Pose()
+            ipose.position.x = newdistance
+            ipose.position.y = 0.0
+            ipose.position.z = 0.0
+            # self.waypoint_namespace = f"wayPointMarker"
+            delmodel = rospy.ServiceProxy("/gazebo/delete_model", DeleteModel)
+            rospy.wait_for_service("/gazebo/delete_model")
+            result = delmodel(self.waypoint_namespace)
+            with open(sdffilepath, "r") as f:
+                sdffile = f.read()
+                try:
+                    result = self.spawn_sdf(model_name=self.waypoint_namespace,
+                                            model_xml=sdffile,
+                                            robot_namespace=self.waypoint_namespace,
+                                            initial_pose=ipose,
+                                            reference_frame="world")
+                except rospy.ServiceException:
+                    result = "/gazebo/SpawnModel service call failed"
+                print(f"\n\n===========================\n{result}\n===========================\n")
+
+            self.D0 = newdistance
+            self.DMAX = self.DTOL * newdistance
+            self.DLim = self.DTOL * newdistance
+
+    def rewardFunction(self, obs):
+        dS0 = self.PREVOBS[0] - obs[0]
+        #epwr = np.min([abs(obs[7]), 5.0])
+
+        if obs[0] < 5.1:
+            R = 1
+        elif obs[0] > self.DMAX:
+            R = -1.0
+        # elif abs(obs[1]) > 90:
+        elif dS0 > 0:
+            R = ((dS0 / self.DMAX) * (1.0 + 0.2 * (abs(obs[2]) > 0.3 * self.wind_speed)))
+
+            #R = ((dS0 / self.DMAX) * (1.0 + 1 * (abs(obs[2]) > 0.25 * self.wind_speed)) * (1.0 + 0.5 * (abs(obs[1]) < 155 or abs(obs[1]) > -155)))
+        else:
+            R = (2.0 * (dS0 / self.DMAX))
+            #R = -1
+
+        return R
+
+    def step(self, action):
+        act = np.array([((action[0] + 1) * 45.0), (action[1] * 60.0)])
+        # --> UNPAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/unpause_physics")
+        try:
+            self.unpause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/unpause_physics service call failed!"))
+
+        # -->PUBLISH THE ACTIONS IN THE ROSTOPIC (SEND COMMANDS TO THE ACTUATORS)
+        self.boomAng_pub.publish(act[0])
+        self.rudderAng_pub.publish(act[1])
+        # self.enginePower_pub.publish(int(act[2]))
+
+        # -->GET OBSERVATIONS
+        obs = self.getObservations()
+
+        # -->PAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/pause_physics")
+        try:
+            self.pause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/pause_physics service call failed!"))
+
+        # -->RESCALE EACH OBSERVATION TO THE INTERVAL [-1, 1]
+        robs = self.rescaleObs(obs)[:5]
+
+        # -->CALCULATES THE REWARD
+        reward = self.rewardFunction(obs)
+
+        # -->CHECK FOR A TERMINAL STATE
+        done = bool((obs[0] < 5.1) |
+                    (obs[0] > self.DMAX) |
+                    # (abs(obs[1]) > 90) |
+                    (np.isnan(obs).any()))
+        trunc = bool((self.step_count > 300) |
+                     (abs(obs[10]) > self.lateral_limit))
+
+        # -->UPDATE PREVIOUS STATE VARIABLES
+        self.PREVOBS = obs
+        self.step_count += 1
+
+        return robs, reward, done, trunc, {}
+
+    def reset(self, seed=None, options=None):
+        # -->RESETS THE STATE OF THE ENVIRONMENT.
+        rospy.wait_for_service('/gazebo/reset_simulation')
+        try:
+            self.reset_proxy()
+        except (rospy.ServiceException) as e:
+            print(("/gazebo/reset_simulation service call failed!"))
+
+        # -->SET THE ACTUATORS BACK TO THE DEFAULT SETTING
+        self.boomAng_pub.publish(0.0)
+        self.rudderAng_pub.publish(0.0)
+        self.enginePower_pub.publish(0)
+
+        # -->SET A RANDOM INITIAL STATE FOR THE WIND
+        if len(self.wind_directions) > 1:
+            theta_wind = np.random.choice(self.wind_directions)
+        else:
+            theta_wind = self.wind_directions[0]
+
+        if len(self.wind_speedVec) > 1:
+            self.wind_speed = np.random.choice(self.wind_speedVec)
+        else:
+            self.wind_speed = self.wind_speedVec[0]
+
+        self.windVec[:2] = self.rot(self.wind_speed, (theta_wind * self.d2r))
+        self.wind_pub.publish(Point(self.windVec[0], self.windVec[1], self.windVec[2]))
+
+        direction = [1, -1]
+
+        self.setState(self.model_namespace, [0.0, 0.0, 0.0], 0.698132 * random.choice(direction))
+
+        # -->UNPAUSE SIMULATION TO MAKE OBSERVATION
+        rospy.wait_for_service('/gazebo/unpause_physics')
+        try:
+            self.unpause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/unpause_physics service call failed!"))
+
+        # -->GET OBSERVATIONS
+        obs = self.getObservations()
+
+        # -->PAUSE SIMULATION
+        rospy.wait_for_service("/gazebo/pause_physics")
+        try:
+            self.pause()
+        except(rospy.ServiceException) as e:
+            print(("/gazebo/pause_physics service call failed!"))
+
+        # -->RESCALE EACH OBSERVATION TO THE INTERVAL [-1, 1]
+        robs = self.rescaleObs(obs)[:5]
+
+        # -->RESET INITIAL STATE VALUES
+        self.PREVOBS = obs
+        self.step_count = 0
+
+        # self.DLim       = self.DTOL * obs[0]
+
+        return robs, {}
+
 
 class Eboat93_v1(EboatBase):
     def __init__(self):
@@ -1615,14 +2088,14 @@ class Eboat93_v1(EboatBase):
 
         # -->AUXILIARY VARIABLES
         self.DTOL = 25
-        self.D0   = self.PREVOBS[0]
+        self.D0 = self.PREVOBS[0]
         self.DMAX = self.PREVOBS[0] + self.DTOL
         self.DLim = self.PREVOBS[0] + self.DTOL
-        self.S    = 0.0  # --> TOTAL DISTANCE TRAVELED BY THE BOAT
+        self.S = 0.0  # --> TOTAL DISTANCE TRAVELED BY THE BOAT
         self.preD = 0.0  # --> DISTANCE TRAVELED BY THE BOAT IN THE PREVIOUS STEP
-        self.d2r  = np.pi / 180.0
+        self.d2r = np.pi / 180.0
         self.step_count = 0
-        self.lateral_limit = 0.6 * 100.0  # --> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
+        # self.lateral_limit = 0.6 * 100.0  # --> DEFINE A TOLERANCE FOR HOW MUCH THE BOAT CAN TRAVEL AWY FROM THE STRAIGHT COURSE
         self.dS = 0  # --> TRAVELED DISTANCE
 
         #--> Find the models representing the obstacles
@@ -1847,7 +2320,7 @@ class Eboat93_v1(EboatBase):
         result = self.delmodel("obstacle")
         ipose = Pose()
         ipose.position.x = np.random.randint(low=40, high=80, size=1)
-        ipose.position.y = np.random.randint(low=-5, high=5 , size=1)
+        ipose.position.y = np.random.randint(low=-5, high=5, size=1)
         ipose.position.z = 0.0
         self.spawnSDFModel("obstacle", self.path2models, ipose)
 

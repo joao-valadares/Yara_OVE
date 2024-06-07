@@ -920,8 +920,8 @@ class EboatStraightLineEnvCC29v0(EboatSingleWayPointEnvCC35v0):
             #              6 rudder angle,
             #              7 eletric propultion power,
             #              8 roll angle
-            #             10 boat's current X position
-            #             11 boat's current Y position
+            #              9 boat's current X position
+            #             10 boat's current Y position
 
         return np.array(obsData, dtype=float)
 

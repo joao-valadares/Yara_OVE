@@ -6,3 +6,5 @@ from esailor_gym.envs.eboatEnvs import Eboat92_v0
 from esailor_gym.envs.eboatEnvs import Eboat62_v0
 from esailor_gym.envs.eboatEnvs import Eboat93_v0
 from esailor_gym.envs.eboatEnvs import Eboat93_v1
+from esailor_gym.envs.eboatEnvs import Eboat93_v2
+from esailor_gym.envs.eboatEnvs import Eboat93_v3
